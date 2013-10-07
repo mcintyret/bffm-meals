@@ -16,7 +16,6 @@ import com.mcintyret.bffm.types.FoodType;
 import com.mcintyret.bffm.types.Nutrient;
 
 import java.io.*;
-import java.lang.reflect.ParameterizedType;
 import java.lang.reflect.Type;
 import java.util.*;
 
@@ -27,12 +26,12 @@ import java.util.*;
 public class Data {
 
     private static final Gson GSON = new GsonBuilder()
-            .setPrettyPrinting()
-            .registerTypeAdapter(
-                    new TypeToken<EnumMap<Nutrient, Float>>() {
-                    }.getType(),
-                    new EnumMapInstanceCreator<Nutrient, Float>(Nutrient.class))
-            .create();
+        .setPrettyPrinting()
+        .registerTypeAdapter(
+            new TypeToken<EnumMap<Nutrient, Float>>() {
+            }.getType(),
+            new EnumMapInstanceCreator<Nutrient, Float>(Nutrient.class))
+        .create();
 
 
     private static class EnumMapInstanceCreator<K extends Enum<K>, V> implements InstanceCreator<EnumMap<K, V>> {
@@ -46,29 +45,13 @@ public class Data {
 
         @Override
         public EnumMap<K, V> createInstance(final Type type) {
-            return new EnumMap<K, V>(enumClazz);
+            return new EnumMap<>(enumClazz);
         }
     }
 
-    private static final Type TYPE = new ParameterizedType() {
-        @Override
-        public Type[] getActualTypeArguments() {
-            return new Type[]{FoodType.class};
-        }
+    private static final File USDA = new File(System.getProperty("user.dir") + "/core/src/main/resources/usdaFoodData.json");
 
-        @Override
-        public Type getRawType() {
-            return List.class;
-        }
-
-        @Override
-        public Type getOwnerType() {
-            return null;
-        }
-    };
-
-
-    private static final File FILE = new File(System.getProperty("user.dir") + "/core/src/main/resources/myFoodData.json");
+    private static final File MINE = new File(System.getProperty("user.dir") + "/core/src/main/resources/myFoodData.json");
 
     private static final Comparator<FoodType> FOOD_TYPE_COMPARATOR = new Comparator<FoodType>() {
         @Override
@@ -77,45 +60,81 @@ public class Data {
         }
     };
 
-    private static final List<FoodType> FOOD_TYPES = loadFoodTypes();
+    private static final List<FoodType> USDA_FOOD_TYPES = loadUsdaFoodTypes();
 
-    private static final Vector<FoodType> FOOD_TYPE_VECTOR = new Vector<>(FOOD_TYPES);
+    private static final List<FoodType> MY_FOOD_TYPES = loadMyFoodTypes();
+
+    private static final List<FoodType> ALL_FOOD_TYPES = combineAllFoodTypes();
+
+    private static List<FoodType> combineAllFoodTypes() {
+        List<FoodType> allFoodTypes = new ArrayList<>(USDA_FOOD_TYPES.size() + MY_FOOD_TYPES.size());
+        allFoodTypes.addAll(USDA_FOOD_TYPES);
+        allFoodTypes.addAll(MY_FOOD_TYPES);
+        Collections.sort(allFoodTypes, FOOD_TYPE_COMPARATOR);
+        return allFoodTypes;
+    }
+
+    private static final Vector<FoodType> ALL_FOOD_TYPES_VECTOR = new Vector<>(ALL_FOOD_TYPES);
 
     public static List<FoodType> foodTypes() {
-        return Collections.unmodifiableList(FOOD_TYPES);
+        return Collections.unmodifiableList(ALL_FOOD_TYPES);
     }
 
     public static Vector<FoodType> foodTypeVector() {
-        return FOOD_TYPE_VECTOR;
+        return ALL_FOOD_TYPES_VECTOR;
     }
 
-    private static List<FoodType> loadFoodTypes() {
+    private static List<FoodType> loadFoodTypesFromJson(File file) {
+        try (Reader reader = new BufferedReader(new FileReader(file))) {
+            return GSON.fromJson(reader, new TypeToken<List<FoodType>>() {
+            }.getType());
+        } catch (IOException e) {
+            return dealWithFailure(e);
+        }
+    }
+
+    private static <V> V dealWithFailure(Exception e) {
+        e.printStackTrace();
+        System.exit(234);
+        throw new AssertionError("Cannot happen");
+    }
+
+    private static List<FoodType> loadMyFoodTypes() {
+        if (MINE.exists()) {
+            return loadFoodTypesFromJson(MINE);
+        } else {
+            try {
+                MINE.createNewFile();
+                return Collections.emptyList();
+            } catch (IOException e) {
+                return dealWithFailure(e);
+            }
+        }
+    }
+
+    private static List<FoodType> loadUsdaFoodTypes() {
         try {
-            System.out.println(FILE);
-            if (FILE.exists()) {
-                try (Reader reader = new BufferedReader(new FileReader(FILE))) {
-                    return GSON.fromJson(reader, new TypeToken<List<FoodType>>() {
-                    }.getType());
-                }
+            if (USDA.exists()) {
+                return loadFoodTypesFromJson(USDA);
             } else {
-                FILE.createNewFile();
+                USDA.createNewFile();
 
                 final Map<String, FoodDescription> foodDescriptions = Maps.uniqueIndex(Parsers.foodDescriptionParser().parseList(),
-                        new Function<FoodDescription, String>() {
-                            @Override
-                            public String apply(FoodDescription input) {
-                                return input.getId();
-                            }
-                        });
+                    new Function<FoodDescription, String>() {
+                        @Override
+                        public String apply(FoodDescription input) {
+                            return input.getId();
+                        }
+                    });
 
 
                 Multimap<FoodDescription, NutrientData> multimap = Multimaps.index(Parsers.nutrientDataParser().parseList(),
-                        new Function<NutrientData, FoodDescription>() {
-                            @Override
-                            public FoodDescription apply(NutrientData input) {
-                                return foodDescriptions.get(input.getFoodId());
-                            }
-                        });
+                    new Function<NutrientData, FoodDescription>() {
+                        @Override
+                        public FoodDescription apply(NutrientData input) {
+                            return foodDescriptions.get(input.getFoodId());
+                        }
+                    });
 
                 List<FoodType> foodTypes = Lists.newArrayList();
                 for (Map.Entry<FoodDescription, Collection<NutrientData>> entry : multimap.asMap().entrySet()) {
@@ -123,6 +142,10 @@ public class Data {
                 }
 
                 Collections.sort(foodTypes, FOOD_TYPE_COMPARATOR);
+
+                try (Writer writer = new BufferedWriter(new FileWriter(USDA))) {
+                    GSON.toJson(foodTypes, writer);
+                }
 
                 return foodTypes;
             }
@@ -135,14 +158,18 @@ public class Data {
     }
 
     public static void addFoodType(FoodType foodType) {
-        FOOD_TYPES.add(foodType);
-        Collections.sort(FOOD_TYPES, FOOD_TYPE_COMPARATOR);
+        ALL_FOOD_TYPES.add(foodType);
+        Collections.sort(ALL_FOOD_TYPES, FOOD_TYPE_COMPARATOR);
 
-        FOOD_TYPE_VECTOR.clear();
-        FOOD_TYPE_VECTOR.addAll(FOOD_TYPES);
+        ALL_FOOD_TYPES_VECTOR.clear();
+        ALL_FOOD_TYPES_VECTOR.addAll(ALL_FOOD_TYPES);
 
-        try (Writer writer = new BufferedWriter(new FileWriter(FILE))) {
-            GSON.toJson(FOOD_TYPES, writer);
+        MY_FOOD_TYPES.add(foodType);
+        Collections.sort(MY_FOOD_TYPES, FOOD_TYPE_COMPARATOR);
+
+
+        try (Writer writer = new BufferedWriter(new FileWriter(MINE))) {
+            GSON.toJson(MY_FOOD_TYPES, writer);
         } catch (IOException e) {
             e.printStackTrace();
         }
