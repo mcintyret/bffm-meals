@@ -1,15 +1,17 @@
 package com.mcintyret.bffm.gui;
 
-import com.mcintyret.bffm.Data;
-import com.mcintyret.bffm.raw.FoodDescription;
+import com.mcintyret.bffm.load.Loaders;
+import com.mcintyret.bffm.types.FoodDescription;
 import com.mcintyret.bffm.types.FoodType;
 import com.mcintyret.bffm.types.Nutrient;
+import com.mcintyret.bffm.types.Source;
 
 import javax.swing.*;
 import javax.swing.border.LineBorder;
 import java.awt.*;
 import java.awt.event.ActionEvent;
 import java.awt.event.ActionListener;
+import java.io.IOException;
 import java.util.EnumMap;
 import java.util.HashSet;
 import java.util.Map;
@@ -67,7 +69,7 @@ public class NewFoodPanel extends JPanel {
                     return;
                 }
 
-                FoodDescription desc = new FoodDescription(name.getText());
+                FoodDescription desc = new FoodDescription(name.getText(), Source.USER, name.getText());
                 EnumMap<Nutrient, Float> nutrientVals = new EnumMap<>(Nutrient.class);
                 Nutrient curr = null;
                 try {
@@ -82,10 +84,16 @@ public class NewFoodPanel extends JPanel {
                     }
                 } catch (Exception ex) {
                     JOptionPane.showMessageDialog(NewFoodPanel.this, "Error parsing value for " + curr.getName() + ". Fix and try again!", "Fail", JOptionPane.ERROR_MESSAGE);
+                    ex.printStackTrace();
                 }
 
                 FoodType newFoodType = new FoodType(nutrientVals, desc);
-                Data.addFoodType(newFoodType);
+                try {
+                    Loaders.addFoodType(Source.USER, newFoodType);
+                } catch (IOException ex) {
+                    JOptionPane.showMessageDialog(NewFoodPanel.this, "Error attempting to store new FoodType: " + ex.getMessage(), "Balls", JOptionPane.ERROR_MESSAGE);
+                    ex.printStackTrace();
+                }
                 FoodIndex.addToIndex(newFoodType);
 
                 clear();

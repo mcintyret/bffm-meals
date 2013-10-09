@@ -1,8 +1,5 @@
 package com.mcintyret.bffm.types;
 
-import com.mcintyret.bffm.raw.FoodDescription;
-import com.mcintyret.bffm.raw.NutrientData;
-
 import java.util.Collections;
 import java.util.EnumMap;
 import java.util.Map;
@@ -16,19 +13,6 @@ public class FoodType {
     private EnumMap<Nutrient, Float> nutrients;
 
     private FoodDescription foodDescription;
-
-    public FoodType(FoodDescription foodDescription, Iterable<NutrientData> nutrientData) {
-        this.foodDescription = foodDescription;
-
-        EnumMap<Nutrient, Float> nutrients = new EnumMap<>(Nutrient.class);
-        for (NutrientData nd : nutrientData) {
-            Nutrient nutrient = Nutrient.forId(nd.getId());
-            if (nutrient != null) {
-                nutrients.put(nutrient, nd.getAmountIn100g());
-            }
-        }
-        this.nutrients = nutrients;
-    }
 
     public FoodType(EnumMap<Nutrient, Float> nutrients, FoodDescription foodDescription) {
         this.nutrients = nutrients;

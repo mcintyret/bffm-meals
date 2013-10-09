@@ -1,8 +1,9 @@
 package com.mcintyret.bffm.gui;
 
-import com.mcintyret.bffm.Data;
+import com.mcintyret.bffm.load.Loaders;
 import com.mcintyret.bffm.types.FoodType;
 
+import java.io.IOException;
 import java.util.*;
 
 /**
@@ -18,8 +19,12 @@ public class FoodIndex {
     }
 
     private static void makeIndex() {
-        for (FoodType foodType : Data.foodTypes()) {
-            addToIndex(foodType);
+        try {
+            for (FoodType foodType : Loaders.loadAllFoodTypes()) {
+                addToIndex(foodType);
+            }
+        } catch (IOException e) {
+            throw new IllegalStateException("Unable to load FoodTypes to generate index");
         }
     }
 
@@ -52,7 +57,7 @@ public class FoodIndex {
         }
 
         List<FoodType> list = new ArrayList<>(set);
-        Collections.sort(list, Data.getFoodTypeComparator());
+        Collections.sort(list, Loaders.getFoodTypeComparator());
         return list;
     }
 

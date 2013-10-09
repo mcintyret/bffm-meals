@@ -4,6 +4,7 @@ import javax.swing.*;
 import java.awt.*;
 import java.awt.event.ActionEvent;
 import java.awt.event.ActionListener;
+import java.io.IOException;
 
 /**
  * User: tommcintyre
@@ -33,7 +34,12 @@ public class Gui {
                 addActionListener(new ActionListener() {
                     @Override
                     public void actionPerformed(ActionEvent e) {
-                        addTab("New Meal", new NewMealPanel());
+                        try {
+                            addTab("New Meal", new NewMealPanel());
+                        } catch (IOException e1) {
+                            JOptionPane.showMessageDialog(FRAME.getContentPane(), "Error loading data for New Meal page", "Error", JOptionPane.ERROR_MESSAGE
+                            );
+                        }
                     }
                 });
             }

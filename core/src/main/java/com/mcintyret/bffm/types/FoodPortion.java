@@ -1,7 +1,5 @@
 package com.mcintyret.bffm.types;
 
-import com.mcintyret.bffm.raw.FoodDescription;
-
 /**
  * User: tommcintyre
  * Date: 9/10/13

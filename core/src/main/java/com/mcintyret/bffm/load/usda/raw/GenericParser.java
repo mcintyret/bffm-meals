@@ -1,4 +1,4 @@
-package com.mcintyret.bffm.raw;
+package com.mcintyret.bffm.load.usda.raw;
 
 import com.google.common.base.Splitter;
 import com.google.common.collect.Iterables;

@@ -1,12 +1,13 @@
 package com.mcintyret.bffm.gui;
 
-import com.mcintyret.bffm.Data;
+import com.mcintyret.bffm.load.Loaders;
 import com.mcintyret.bffm.types.FoodType;
 
 import javax.swing.*;
 import javax.swing.text.JTextComponent;
 import java.awt.event.ActionEvent;
 import java.awt.event.ActionListener;
+import java.io.IOException;
 import java.util.Collection;
 import java.util.Vector;
 
@@ -16,11 +17,13 @@ import java.util.Vector;
  */
 public class FoodPicker {
 
-    private final JComboBox<FoodType> combo = new JComboBox<>(Data.foodTypeVector());
+    private final JComboBox<FoodType> combo;
 
     private boolean ignore = false;
 
-    public FoodPicker() {
+    public FoodPicker() throws IOException {
+        combo = new JComboBox<>(new Vector<>(Loaders.loadAllFoodTypes()));
+
         combo.setMaximumRowCount(20);
         combo.setEditable(true);
 

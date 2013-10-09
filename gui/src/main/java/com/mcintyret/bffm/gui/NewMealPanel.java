@@ -1,6 +1,5 @@
 package com.mcintyret.bffm.gui;
 
-import com.mcintyret.bffm.Data;
 import com.mcintyret.bffm.types.FoodType;
 
 import javax.swing.*;
@@ -13,6 +12,7 @@ import javax.swing.text.Document;
 import java.awt.*;
 import java.awt.event.ActionEvent;
 import java.awt.event.ActionListener;
+import java.io.IOException;
 import java.util.LinkedHashMap;
 import java.util.Map;
 
@@ -30,7 +30,7 @@ public class NewMealPanel extends JPanel {
 
     private final CaloriesTarget caloriesTarget = new CaloriesTarget(20, 40, 40);
 
-    public NewMealPanel() {
+    public NewMealPanel() throws IOException {
         setLayout(new BoxLayout(this, BoxLayout.Y_AXIS));
         add(new MealControlPanel());
         add(new NewIngredientPanel());
@@ -55,13 +55,14 @@ public class NewMealPanel extends JPanel {
 
     private class NewIngredientPanel extends JPanel {
 
-        private final JComboBox<FoodType> ingredients = new FoodPicker().getCombo();
+        private final JComboBox<FoodType> ingredients;
 
         private final JTextField amount = new JTextField();
 
-        public NewIngredientPanel() {
+        public NewIngredientPanel() throws IOException {
             setLayout(new BoxLayout(this, BoxLayout.X_AXIS));
             add(new JLabel("New ingredient: "));
+            ingredients = new FoodPicker().getCombo();
             add(ingredients);
             add(new JLabel("Initial amount: "));
             add(amount);

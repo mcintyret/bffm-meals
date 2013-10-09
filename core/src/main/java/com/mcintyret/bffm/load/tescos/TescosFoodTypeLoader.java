@@ -1,12 +1,14 @@
-package com.mcintyret.bffm.gather.tescos;
+package com.mcintyret.bffm.load.tescos;
 
 import com.google.common.collect.ImmutableMap;
 import com.google.common.collect.ImmutableSet;
 import com.google.gson.Gson;
 import com.google.gson.GsonBuilder;
-import com.mcintyret.bffm.raw.FoodDescription;
+import com.mcintyret.bffm.load.FoodTypeLoader;
+import com.mcintyret.bffm.types.FoodDescription;
 import com.mcintyret.bffm.types.FoodType;
 import com.mcintyret.bffm.types.Nutrient;
+import com.mcintyret.bffm.types.Source;
 import org.jsoup.Jsoup;
 import org.jsoup.nodes.Document;
 import org.jsoup.nodes.Element;
@@ -20,7 +22,7 @@ import java.util.regex.Pattern;
  * User: tommcintyre
  * Date: 10/7/13
  */
-public class TescosFoodGatherer {
+public class TescosFoodTypeLoader implements FoodTypeLoader {
 
     private static final Pattern KCAL_PATTERN = Pattern.compile("(\\d+)kcal", Pattern.CASE_INSENSITIVE);
     private static final Pattern KJ_PATTERN = Pattern.compile("(\\d+)kj", Pattern.CASE_INSENSITIVE);
@@ -89,7 +91,8 @@ public class TescosFoodGatherer {
             "Fresh Food", "Food Cupboard", "Bakery", "Frozen Food"
     );
 
-    public List<FoodType> doIt() throws IOException {
+    @Override
+    public List<FoodType> load() throws IOException {
         Document groceries = getUrl("http://www.tesco.com/groceries/");
 
         List<FoodType> allFood = new ArrayList<>();
@@ -165,11 +168,19 @@ public class TescosFoodGatherer {
             }
         }
 
-        FoodType foodType = new FoodType(nutrients, new FoodDescription(foodName));
+        FoodType foodType = new FoodType(nutrients, new FoodDescription(foodName, Source.TESCOS, extractId(url)));
 
         printFoodType(foodType);
 
         return foodType;
+    }
+
+    private String extractId(String url) {
+        int index = url.indexOf("id=");
+        if (index > 0) {
+            return url.substring(index + 3);
+        }
+        return null;
     }
 
     private float parseAmount(String amount) {
@@ -233,7 +244,7 @@ public class TescosFoodGatherer {
         File file = new File(System.getProperty("user.dir") + "/core/src/main/resources/tescosFoodData.json");
         file.createNewFile();
 
-        List<FoodType> tescoFoods = new TescosFoodGatherer().doIt();
+        List<FoodType> tescoFoods = new TescosFoodTypeLoader().load();
 
         Gson gson = new GsonBuilder().setPrettyPrinting().create();
 
